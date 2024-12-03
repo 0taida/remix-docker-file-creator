@@ -1,17 +1,18 @@
 version: '3.8'
 
 services:
-  remix-app:
+  folder-creator:
     build:
       context: .
-    container_name: remix-app
+    container_name: folder-creator
     volumes:
       - shared_volume:/shared
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - HOSTNAME=$HOSTNAME
 
 volumes:
   shared_volume:
+    external: true
+# run this to create the volume : docker volume create shared_volume
