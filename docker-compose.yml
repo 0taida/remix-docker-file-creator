@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  remix-app:
+    build:
+      context: .
+    container_name: remix-app
+    volumes:
+      - shared_volume:/shared
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - HOSTNAME=$HOSTNAME
+
+volumes:
+  shared_volume:
