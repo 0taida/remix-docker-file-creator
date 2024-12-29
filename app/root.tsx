@@ -50,8 +50,17 @@ export default function App() {
   return <Outlet />;
 }
 
-// Add error boundary
-export function ErrorBoundary({ error }: { error: Error }) {
+// Add proper error type
+type ErrorBoundaryProps = {
+  error: {
+    message?: string;
+    stack?: string;
+  };
+};
+
+export function ErrorBoundary({ error }: ErrorBoundaryProps) {
+  const errorMessage = error?.message || "An unexpected error occurred";
+  
   return (
     <html lang="en" className="dark">
       <head>
@@ -81,7 +90,34 @@ export function ErrorBoundary({ error }: { error: Error }) {
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
         }}>
           <h1 style={{ color: '#ef4444', marginTop: 0 }}>Error</h1>
-          <p style={{ color: '#999' }}>{error.message}</p>
+          <p style={{ color: '#999' }}>{errorMessage}</p>
+          {error?.stack && (
+            <pre style={{ 
+              textAlign: 'left', 
+              backgroundColor: '#222',
+              padding: '1rem',
+              borderRadius: '8px',
+              overflow: 'auto',
+              fontSize: '0.875rem',
+              color: '#666'
+            }}>
+              {error.stack}
+            </pre>
+          )}
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              marginTop: '1rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            Try Again
+          </button>
         </div>
         <Scripts />
       </body>

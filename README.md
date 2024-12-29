@@ -1,86 +1,121 @@
-# Docker Volume File Creator
+# Remix Folder Creator
 
-A web application built with Remix.js that provides a user-friendly interface to create folders and files within Docker volumes. This tool allows you to specify file content and extensions, making it perfect for managing files in Docker volumes through a web interface.
+A modern web application built with Remix.js that provides a sleek, dark-themed interface for managing files and folders within Docker volumes. This tool offers a tree-view interface with collapsible folders, real-time content editing, and intuitive file management capabilities.
 
 ## 🚀 Features
 
-- Create folders in Docker volumes
-- Create files with custom content
-- Specify file extensions
-- User-friendly web interface
-- Real-time file system operations
-- Docker volume integration
+- **Tree View Interface**
+  - Hierarchical display of files and folders
+  - Collapsible folders with item count
+  - Intuitive navigation through nested structures
+
+- **File Management**
+  - Create files and folders in any location
+  - Edit file contents in a modal window
+  - Delete files and folders
+  - Path selection for new items
+  - Support for various file types
+
+- **Modern UI/UX**
+  - Dark theme interface
+  - Smooth animations and transitions
+  - Real-time updates
+  - Toast notifications
+  - Responsive design
+
+- **Docker Integration**
+  - Seamless Docker volume management
+  - Persistent storage
+  - Real-time file system operations
 
 ## 🛠️ Technologies
 
 - [Remix.js](https://remix.run/) - Full-stack web framework
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
 - Docker - Container and volume management
+- React Hot Toast - Notifications
+- TypeScript - Type safety
 
 ## 🏁 Getting Started
 
 ### Prerequisites
 
 - Node.js (v14 or higher)
-- npm or yarn
 - Docker with running daemon
-- Docker volume(s) to manage
 
-Create the required Docker volume:
+### Initial Setup
+
+1. Create the required Docker volume:
 ```bash
 docker volume create shared_volume
 ```
 
-### Installation
-
-1. Clone the repository:
+2. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/docker-volume-file-creator.git
-cd docker-volume-file-creator
+git clone https://github.com/yourusername/remix-folder-creator.git
+cd remix-folder-creator
 ```
 
-2. Install dependencies:
+3. Install dependencies:
 ```bash
 npm install
 ```
 
+## 🚀 Development
+
+1. Start the development environment:
+```bash
+docker-compose up --build
+```
+
+2. Access the application at `http://localhost:3000`
+
 ## 💻 Usage
 
-1. Start the development server:
+### Managing Files and Folders
+
+1. **Creating Folders**
+   - Click "Create Folder"
+   - Select the desired path from the dropdown
+   - Enter folder name
+   - Click Create
+
+2. **Creating Files**
+   - Click "Create File"
+   - Select the destination path
+   - Enter file name and extension
+   - Add content in the editor
+   - Click Create
+
+3. **Editing Files**
+   - Click the "Edit" button on any file
+   - Modify content in the modal editor
+   - Save changes
+
+4. **Deleting Items**
+   - Click the "Delete" button on any file or folder
+   - Confirm the deletion
+
+### Tree Navigation
+
+- Click the arrow (▶) to expand/collapse folders
+- View item counts for each folder
+- Navigate through nested structures
+
+## 🐳 Docker Deployment
+
+1. Build and run with Docker Compose:
 ```bash
-npm run dev
+docker-compose up -d
 ```
 
-2. Open your browser and navigate to `http://localhost:3000`
+2. Access the application at `http://localhost:3000`
 
-3. Using the web interface:
-   - Enter the folder path you want to create
-   - Specify the file name and extension (e.g., `config.json`, `script.sh`)
-   - Add your file content in the text editor
-   - Click create to generate the folder and file
+## 🔒 Security Notes
 
-## 🚀 Production Deployment
-
-1. Build the application:
-```bash
-npm run build
-```
-
-2. Start the production server:
-```bash
-npm start
-```
-
-### Docker Volume Access
-
-Make sure the application has proper permissions to access and modify the Docker volumes you want to manage. The application needs to be run with appropriate user permissions or Docker socket access.
-
-## 🔒 Security Considerations
-
-- Ensure proper access controls are in place
-- Validate file paths to prevent directory traversal
-- Implement user authentication if needed
-- Restrict access to specific Docker volumes
+- Ensure proper volume permissions
+- Validate all file operations
+- Implement access controls as needed
+- Monitor volume usage
 
 ## 📝 License
 
@@ -88,7 +123,18 @@ Make sure the application has proper permissions to access and modify the Docker
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
+Contributions are welcome! Please feel free to:
 - Report bugs
 - Suggest new features
 - Submit pull requests
+- Improve documentation
+
+## 🎨 Future Enhancements
+
+- File upload capability
+- Search functionality
+- File type icons
+- Drag and drop interface
+- Multi-file operations
+- User authentication
+- Theme customization

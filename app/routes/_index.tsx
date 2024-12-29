@@ -1,7 +1,42 @@
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { useLoaderData, useNavigate, Form } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import type { LoaderFunction } from "@remix-run/node";
 import { Toaster, toast } from 'react-hot-toast';
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const modalStyle: React.CSSProperties = {
+  backgroundColor: '#1a1a1a',
+  padding: '20px',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  position: 'relative',
+  border: '1px solid #333',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+};
+
+const buttonStyle: React.CSSProperties = {
+  padding: "10px 20px",
+  borderRadius: "8px",
+  border: "none",
+  backgroundColor: "#2563eb",
+  color: "white",
+  cursor: "pointer",
+  fontWeight: "bold",
+  transition: "all 0.2s ease",
+};
 
 type FileInfo = {
   name: string;
@@ -219,6 +254,137 @@ const TreeItem = ({
   );
 };
 
+// Add new type for file upload
+type UploadModalProps = {
+  onClose: () => void;
+  selectedPath: string;
+  setSelectedPath: (path: string) => void;
+  pathOptions: PathOption[];
+};
+
+// Add FileUploadModal component
+const FileUploadModal = ({ onClose, selectedPath, setSelectedPath, pathOptions }: UploadModalProps) => {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const fileInput = event.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+      toast.error("Please select a file");
+      return;
+    }
+
+    const formData = new FormData();
+    // Important: append file first with the correct field name
+    formData.append('file', fileInput.files[0], fileInput.files[0].name);
+    formData.append('path', selectedPath);
+
+    setIsSubmitting(true);
+    
+    try {
+      console.log('Uploading file:', {
+        fileName: fileInput.files[0].name,
+        path: selectedPath,
+        fileSize: fileInput.files[0].size
+      });
+
+      const response = await fetch("/upload-file", {
+        method: "POST",
+        // Important: don't set Content-Type header, let the browser handle it
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        toast.success(result.message || "File uploaded successfully");
+        onClose();
+        navigate(".", { replace: true }); // Refresh the content
+      } else {
+        toast.error(result.message || "Failed to upload file");
+      }
+    } catch (error) {
+      toast.error("Failed to upload file");
+      console.error("Upload error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalStyle} onClick={e => e.stopPropagation()}>
+        <h2 style={{ color: "#4A90E2", marginBottom: "15px" }}>Upload File</h2>
+        
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
+          <select
+            name="path"
+            value={selectedPath}
+            onChange={(e) => setSelectedPath(e.target.value)}
+            style={{ 
+              padding: "12px",
+              borderRadius: "8px",
+              border: "1px solid #333",
+              backgroundColor: "#222",
+              color: "#fff",
+              marginBottom: "12px",
+              width: "100%",
+              outline: "none",
+            }}
+          >
+            {pathOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="file"
+            name="file"
+            required
+            accept="*/*"
+            style={{ 
+              padding: "12px",
+              borderRadius: "8px",
+              border: "1px solid #333",
+              backgroundColor: "#222",
+              color: "#fff",
+              marginBottom: "12px",
+              width: "100%",
+              outline: "none",
+            }}
+          />
+          
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              style={{ ...buttonStyle, backgroundColor: "#666" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                ...buttonStyle,
+                opacity: isSubmitting ? 0.7 : 1,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isSubmitting ? 'Uploading...' : 'Upload'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export const loader: LoaderFunction = async (): Promise<LoaderData> => {
   try {
     const response = await fetch("http://localhost:3000/list-contents");
@@ -253,6 +419,8 @@ export default function Index() {
   const [selectedFolderPath, setSelectedFolderPath] = useState("/");
   const [selectedFilePath, setSelectedFilePath] = useState("/");
   const [isEditing, setIsEditing] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedUploadPath, setSelectedUploadPath] = useState("/");
 
   const refreshContents = () => {
     if (!isEditing) {
@@ -359,42 +527,6 @@ export default function Index() {
       toast.error("Failed to edit file");
       console.error(error);
     }
-  };
-
-  // Modal styles
-  const modalOverlayStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  };
-
-  const modalStyle: React.CSSProperties = {
-    backgroundColor: '#1a1a1a',
-    padding: '20px',
-    borderRadius: '12px',
-    width: '90%',
-    maxWidth: '500px',
-    position: 'relative',
-    border: '1px solid #333',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    padding: "10px 20px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#2563eb",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: "bold",
-    transition: "all 0.2s ease",
   };
 
   // Convert flat contents to tree structure
@@ -526,6 +658,14 @@ export default function Index() {
           onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
         >
           Create File
+        </button>
+        <button
+          onClick={() => setShowUploadModal(true)}
+          style={buttonStyle}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#1d4ed8"}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
+        >
+          Upload File
         </button>
       </div>
 
@@ -688,6 +828,16 @@ export default function Index() {
 
       {/* Edit File Modal */}
       <EditFileModal />
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <FileUploadModal
+          onClose={() => setShowUploadModal(false)}
+          selectedPath={selectedUploadPath}
+          setSelectedPath={setSelectedUploadPath}
+          pathOptions={pathOptions}
+        />
+      )}
 
       {/* Contents List as Tree */}
       <div style={{ 
