@@ -65,6 +65,15 @@ type PathOption = {
   value: string;
 };
 
+// Add to existing types
+type EditingItem = {
+  type: 'file' | 'folder';
+  name: string;
+  content?: string;
+  path: string;
+  newName?: string;
+};
+
 // Convert flat structure to tree
 const buildFileTree = (items: FileInfo[]): FileTree[] => {
   const tree: FileTree[] = [];
@@ -130,7 +139,43 @@ const TreeItem = ({
   onEdit: (file: FileInfo) => void;
   onDelete: (name: string, type: 'file' | 'folder') => void;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false); // Default to collapsed
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState(item.name);
+
+  const handleRename = async () => {
+    try {
+      const response = await fetch("/rename-item", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: item.type,
+          oldPath: item.path,
+          newName: newName
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        toast.success(result.message);
+        setIsEditing(false);
+        window.location.reload(); // Refresh to update tree
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Failed to rename item");
+      console.error(error);
+    }
+  };
+
+  const openFile = () => {
+    // Construct the file URL
+    const fileUrl = `/shared${item.path}`;
+    window.open(fileUrl, '_blank');
+  };
 
   return (
     <div style={{ marginLeft: `${depth * 20}px` }}>
@@ -182,54 +227,141 @@ const TreeItem = ({
           </span>
         )}
         
-        <span style={{ 
-          flex: 1, 
-          color: '#fff',
-          marginLeft: item.type === 'folder' && (!item.children || item.children.length === 0) ? '24px' : '0'
-        }}>
-          {item.name}
-          {item.type === 'folder' && item.children && (
-            <span style={{ 
-              color: '#666', 
-              fontSize: '0.8em',
-              marginLeft: '8px' 
-            }}>
-              ({item.children.length} {item.children.length === 1 ? 'item' : 'items'})
-            </span>
-          )}
-        </span>
+        {isEditing ? (
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleRename();
+              if (e.key === 'Escape') setIsEditing(false);
+            }}
+            autoFocus
+            style={{
+              flex: 1,
+              padding: "4px 8px",
+              backgroundColor: "#333",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              color: "#fff",
+              marginRight: "8px",
+            }}
+          />
+        ) : (
+          <span style={{ 
+            flex: 1, 
+            color: '#fff',
+            marginLeft: item.type === 'folder' && (!item.children || item.children.length === 0) ? '24px' : '0'
+          }}>
+            {item.name}
+            {item.type === 'folder' && item.children && (
+              <span style={{ 
+                color: '#666', 
+                fontSize: '0.8em',
+                marginLeft: '8px' 
+              }}>
+                ({item.children.length} {item.children.length === 1 ? 'item' : 'items'})
+              </span>
+            )}
+          </span>
+        )}
 
         <div style={{ display: "flex", gap: "8px" }}>
           {item.type === 'file' && (
-            <button
-              onClick={() => onEdit(item)}
-              style={{
-                padding: "4px 8px",
-                borderRadius: "4px",
-                border: "none",
-                backgroundColor: "#2563eb",
-                color: "white",
-                cursor: "pointer",
-                fontSize: "12px"
-              }}
-            >
-              Edit
-            </button>
+            <>
+              <button
+                onClick={() => onEdit(item)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "none",
+                  backgroundColor: "#2563eb",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "12px"
+                }}
+              >
+                Edit
+              </button>
+              <button
+                onClick={openFile}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "none",
+                  backgroundColor: "#059669",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "12px"
+                }}
+              >
+                Open
+              </button>
+            </>
           )}
-          <button
-            onClick={() => onDelete(item.name, item.type)}
-            style={{
-              padding: "4px 8px",
-              borderRadius: "4px",
-              border: "none",
-              backgroundColor: "#dc2626",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "12px"
-            }}
-          >
-            Delete
-          </button>
+          {isEditing ? (
+            <>
+              <button
+                onClick={handleRename}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "none",
+                  backgroundColor: "#059669",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "12px"
+                }}
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "none",
+                  backgroundColor: "#666",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "12px"
+                }}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "none",
+                  backgroundColor: "#2563eb",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "12px"
+                }}
+              >
+                Rename
+              </button>
+              <button
+                onClick={() => onDelete(item.name, item.type)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "none",
+                  backgroundColor: "#dc2626",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "12px"
+                }}
+              >
+                Delete
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -284,11 +416,11 @@ const FileUploadModal = ({ onClose, selectedPath, setSelectedPath, pathOptions }
     setIsSubmitting(true);
     
     try {
-      console.log('Uploading file:', {
-        fileName: fileInput.files[0].name,
-        path: selectedPath,
-        fileSize: fileInput.files[0].size
-      });
+      // console.log('Uploading file:', {
+      //   fileName: fileInput.files[0].name,
+      //   path: selectedPath,
+      //   fileSize: fileInput.files[0].size
+      // });
 
       const response = await fetch("/upload-file", {
         method: "POST",
@@ -392,7 +524,7 @@ export const loader: LoaderFunction = async (): Promise<LoaderData> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log('Loaded contents:', data); // Debug log
+    // console.log('Loaded contents:', data); // Debug log
     return { 
       apiEndpoint: "/create-folder",
       contents: data.items || []

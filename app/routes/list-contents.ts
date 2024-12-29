@@ -49,7 +49,7 @@ export const loader = async () => {
     const items = readDirRecursive(sharedPath, sharedPath);
     
     // Log the items for debugging
-    console.log('Found items:', JSON.stringify(items, null, 2));
+    // console.log('Found items:', JSON.stringify(items, null, 2));
 
     return json({ items });
   } catch (error) {
