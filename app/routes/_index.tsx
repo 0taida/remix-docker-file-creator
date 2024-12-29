@@ -1,5 +1,5 @@
 import { useLoaderData, useNavigate } from "@remix-run/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { LoaderFunction } from "@remix-run/node";
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -95,7 +95,7 @@ const TreeItem = ({
   onEdit: (file: FileInfo) => void;
   onDelete: (name: string, type: 'file' | 'folder') => void;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false); // Default to collapsed
 
   return (
     <div style={{ marginLeft: `${depth * 20}px` }}>
@@ -115,7 +115,7 @@ const TreeItem = ({
         e.currentTarget.style.backgroundColor = "#222";
       }}
       >
-        {item.type === 'folder' && (
+        {item.type === 'folder' && item.children && item.children.length > 0 ? (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             style={{
@@ -124,14 +124,46 @@ const TreeItem = ({
               color: '#fff',
               cursor: 'pointer',
               padding: '0 8px',
-              fontSize: '1.2em'
+              fontSize: '1.2em',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'transform 0.2s ease'
             }}
           >
-            {isExpanded ? '📂' : '📁'}
+            <span style={{
+              display: 'inline-block',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease'
+            }}>
+              ▶
+            </span>
+            <span style={{ marginLeft: '4px' }}>
+              {isExpanded ? '📂' : '📁'}
+            </span>
           </button>
+        ) : (
+          <span style={{ padding: '0 8px' }}>
+            {item.type === 'folder' ? '📁' : '📄'}
+          </span>
         )}
-        {item.type === 'file' && <span style={{ padding: '0 8px' }}>📄</span>}
-        <span style={{ flex: 1, color: '#fff' }}>{item.name}</span>
+        
+        <span style={{ 
+          flex: 1, 
+          color: '#fff',
+          marginLeft: item.type === 'folder' && (!item.children || item.children.length === 0) ? '24px' : '0'
+        }}>
+          {item.name}
+          {item.type === 'folder' && item.children && (
+            <span style={{ 
+              color: '#666', 
+              fontSize: '0.8em',
+              marginLeft: '8px' 
+            }}>
+              ({item.children.length} {item.children.length === 1 ? 'item' : 'items'})
+            </span>
+          )}
+        </span>
+
         <div style={{ display: "flex", gap: "8px" }}>
           {item.type === 'file' && (
             <button
@@ -165,8 +197,13 @@ const TreeItem = ({
           </button>
         </div>
       </div>
-      {item.children && isExpanded && (
-        <div>
+
+      {/* Children are only rendered if the folder is expanded */}
+      {item.type === 'folder' && item.children && isExpanded && (
+        <div style={{
+          overflow: 'hidden',
+          transition: 'all 0.3s ease',
+        }}>
           {item.children.map((child) => (
             <TreeItem 
               key={child.path} 
@@ -215,9 +252,12 @@ export default function Index() {
   const [editingFile, setEditingFile] = useState<FileInfo | null>(null);
   const [selectedFolderPath, setSelectedFolderPath] = useState("/");
   const [selectedFilePath, setSelectedFilePath] = useState("/");
+  const [isEditing, setIsEditing] = useState(false);
 
   const refreshContents = () => {
-    navigate(".", { replace: true });
+    if (!isEditing) {
+      navigate(".", { replace: true });
+    }
   };
 
   const createFolder = async () => {
@@ -277,35 +317,47 @@ export default function Index() {
   };
 
   const deleteItem = async (name: string, type: 'file' | 'folder') => {
-    const response = await fetch("/delete-item", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, type }),
-    });
-    const result = await response.json();
-    if (response.ok) {
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
+    try {
+      const response = await fetch("/delete-item", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, type }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        toast.success(result.message);
+        refreshContents(); // Refresh after deletion
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Failed to delete item");
+      console.error(error);
     }
   };
 
   const editFile = async (name: string, content: string) => {
-    const response = await fetch("/edit-file", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, content }),
-    });
-    const result = await response.json();
-    if (response.ok) {
-      toast.success(result.message);
-      setEditingFile(null);
-    } else {
-      toast.error(result.message);
+    try {
+      const response = await fetch("/edit-file", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, content }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        toast.success(result.message);
+        setEditingFile(null);
+        refreshContents(); // Refresh after edit
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Failed to edit file");
+      console.error(error);
     }
   };
 
@@ -356,7 +408,10 @@ export default function Index() {
     if (!editingFile) return null;
     
     return (
-      <div style={modalOverlayStyle} onClick={() => setEditingFile(null)}>
+      <div style={modalOverlayStyle} onClick={() => {
+        setEditingFile(null);
+        setIsEditing(false);
+      }}>
         <div style={modalStyle} onClick={e => e.stopPropagation()}>
           <h2 style={{ 
             color: "#2563eb", 
@@ -369,6 +424,8 @@ export default function Index() {
           <textarea
             value={editingFile.content}
             onChange={(e) => setEditingFile({ ...editingFile, content: e.target.value })}
+            onFocus={() => setIsEditing(true)}
+            onBlur={() => setIsEditing(false)}
             style={{ 
               padding: "12px",
               borderRadius: "8px",
@@ -385,13 +442,19 @@ export default function Index() {
           />
           <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
             <button
-              onClick={() => setEditingFile(null)}
+              onClick={() => {
+                setEditingFile(null);
+                setIsEditing(false);
+              }}
               style={{ ...buttonStyle, backgroundColor: "#666" }}
             >
               Cancel
             </button>
             <button
-              onClick={() => editFile(editingFile.name, editingFile.content || '')}
+              onClick={() => {
+                editFile(editingFile.name, editingFile.content || '');
+                setIsEditing(false);
+              }}
               style={buttonStyle}
             >
               Save Changes
@@ -401,6 +464,18 @@ export default function Index() {
       </div>
     );
   };
+
+  // Modify useEffect to respect editing state
+  useEffect(() => {
+    // Only set up auto-refresh if we're not editing
+    if (!isEditing) {
+      const interval = setInterval(() => {
+        refreshContents();
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isEditing]); // Add isEditing to dependencies
 
   return (
     <div style={{ 

@@ -2,7 +2,7 @@ import { json } from "@remix-run/node";
 import fs from "fs";
 import path from "path";
 
-// Helper function to recursively read directory
+// Helper function to recursively read directory contents
 const readDirRecursive = (dirPath: string, basePath: string) => {
   const items: Array<{ name: string; type: 'file' | 'folder'; content?: string; path: string }> = [];
   
@@ -14,17 +14,21 @@ const readDirRecursive = (dirPath: string, basePath: string) => {
     const stat = fs.statSync(fullPath);
     
     if (stat.isDirectory()) {
+      // Add the folder itself
       items.push({
         name: item,
         type: 'folder',
-        path: '/' + relativePath,
-        children: readDirRecursive(fullPath, basePath)
+        path: '/' + relativePath.split(path.sep).join('/'),
       });
+      
+      // Recursively read contents of the folder
+      const subItems = readDirRecursive(fullPath, basePath);
+      items.push(...subItems);
     } else {
       items.push({
         name: item,
         type: 'file',
-        path: '/' + relativePath,
+        path: '/' + relativePath.split(path.sep).join('/'),
         content: fs.readFileSync(fullPath, 'utf-8')
       });
     }
