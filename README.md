@@ -1,20 +1,22 @@
-# Remix Folder Creator
+# Docker Volume Explorer
 
-A modern web application built with Remix.js that provides a sleek, dark-themed interface for managing files and folders within Docker volumes. This tool offers a tree-view interface with collapsible folders, real-time content editing, and intuitive file management capabilities.
+A modern web application built with Remix.js that provides a sleek, dark-themed interface for exploring and managing Docker volumes. This tool offers an intuitive tree-view interface for browsing volume contents, with real-time file management capabilities.
 
 ## 🚀 Features
 
-- **Tree View Interface**
-  - Hierarchical display of files and folders
-  - Collapsible folders with item count
+- **Interactive Tree View**
+  - Hierarchical display of volume contents
+  - Expandable/collapsible folders
+  - Real-time folder content count
   - Intuitive navigation through nested structures
 
 - **File Management**
-  - Create files and folders in any location
+  - Upload files to any location
+  - Create files and folders
   - Edit file contents in a modal window
+  - Rename files and folders
   - Delete files and folders
-  - Path selection for new items
-  - Support for various file types
+  - Path selection for all operations
 
 - **Modern UI/UX**
   - Dark theme interface
@@ -22,11 +24,13 @@ A modern web application built with Remix.js that provides a sleek, dark-themed 
   - Real-time updates
   - Toast notifications
   - Responsive design
+  - Tree-based navigation
 
 - **Docker Integration**
-  - Seamless Docker volume management
+  - Direct Docker volume access
   - Persistent storage
   - Real-time file system operations
+  - Safe file handling
 
 ## 🛠️ Technologies
 
